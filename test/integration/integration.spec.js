@@ -15,29 +15,28 @@ const executeGodotForType = (type) => {
 }
 
 describe('gd-com binary serializer', () => {
-  it('should encore/decode uint 8', () => {
-    // start godot server
-    const data = executeGodotForType('put_u8')
+  [
+    'put_u8', 'put_u16', 'put_u32', 'put_u64',
+    'put_8', 'put_16', 'put_32', 'put_64',
+    'put_string',
+    'put_float',
+    'put_double',
+    'put_var'
+  ].map(i => {
+    it(`should decode ${i}`, () => {
+      const data = executeGodotForType(i)
+      // transform put_u8 to put / get
+      const removed = i.replace('put_', '')
+      const methodName = removed.charAt(0).toUpperCase() + removed.slice(1)
+      const putMethod = GdCom[`put${methodName}`]
+      const getMethod = GdCom[`get${methodName}`]
 
-    data.forEach((item) => {
-      expect(GdCom.getU8(Buffer.from(item.buffer)).value).to.deep.equal(item.value)
-      expect(GdCom.putU8(item.value)).to.deep.equal(Buffer.from(item.buffer))
-    })
-  })
+      data.forEach((item) => {
+        const buf = Buffer.from(item.buffer)
 
-  it('should encore/decode uint 16', () => {
-    // start godot server
-    const data = executeGodotForType('put_u16')
-
-    data.forEach((item) => {
-      const buf = Buffer.from(item.buffer)
-      console.log({
-        ...item,
-        buf
+        expect(getMethod(buf).value).to.deep.equal(item.value)
+        expect(putMethod(item.value)).to.deep.equal(buf)
       })
-
-      expect(GdCom.getU16(buf).value).to.deep.equal(item.value)
-      expect(GdCom.putU16(item.value)).to.deep.equal(buf)
     })
   })
 })
